@@ -1,22 +1,37 @@
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/gameStore';
 import { validateRound } from '../domain/scoring';
-import { ChevronLeft, ChevronRight, Check, AlertTriangle, TrendingUp, Anchor, Skull, Gavel } from 'lucide-react';
-import { TrickJudgeModal } from './TrickJudgeModal';
+import { ChevronLeft, ChevronRight, Check, AlertTriangle, TrendingUp, Anchor, Skull, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 
 export function RoundEntryScreen() {
-  const game = useGameStore(state => state.game);
-  const updateBid = useGameStore(state => state.updateBid);
-  const updateTricksWon = useGameStore(state => state.updateTricksWon);
-  const updateBonus = useGameStore(state => state.updateBonus);
-  const completeRound = useGameStore(state => state.completeRound);
-  const goToNextRound = useGameStore(state => state.goToNextRound);
-  const editRound = useGameStore(state => state.editRound);
-  const endGame = useGameStore(state => state.endGame);
+  const {
+    game,
+    updateBid,
+    updateTricksWon,
+    updateBonus,
+    completeRound,
+    goToNextRound,
+    editRound,
+    endGame,
+    resetGame,
+  } = useGameStore(
+    useShallow((s) => ({
+      game: s.game,
+      updateBid: s.updateBid,
+      updateTricksWon: s.updateTricksWon,
+      updateBonus: s.updateBonus,
+      completeRound: s.completeRound,
+      goToNextRound: s.goToNextRound,
+      editRound: s.editRound,
+      endGame: s.endGame,
+      resetGame: s.resetGame,
+    }))
+  );
 
   const [activeTab, setActiveTab] = useState<'bids' | 'tricks'>('bids');
-  const [isJudgeOpen, setIsJudgeOpen] = useState(false);
+  const [deletePartidaOpen, setDeletePartidaOpen] = useState(false);
 
   if (!game) return null;
 
@@ -53,10 +68,10 @@ export function RoundEntryScreen() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-24">
+    <div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
       
       {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 p-4 sticky top-0 z-10 shadow-lg">
+      <header className="bg-zinc-900 border-b border-zinc-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] sticky top-0 z-10 shadow-lg">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Skull className="text-amber-500 w-8 h-8" />
@@ -66,8 +81,19 @@ export function RoundEntryScreen() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              data-testid="btn-delete-partida"
+              onClick={() => setDeletePartidaOpen(true)}
+              className="p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-red-950/80 border border-red-900/60 text-red-400 hover:bg-red-900/50 hover:text-red-300 flex items-center justify-center touch-manipulation"
+              title="Eliminar partida"
+              aria-label="Eliminar toda la partida"
+            >
+              <Trash2 className="w-5 h-5" strokeWidth={2.25} />
+            </button>
             <button 
+              type="button"
               onClick={() => {
                 if (currentRoundIndex > 0) {
                   editRound(currentRoundIndex - 1);
@@ -75,11 +101,13 @@ export function RoundEntryScreen() {
                 }
               }}
               disabled={currentRoundIndex === 0}
-              className="p-2 rounded-lg bg-zinc-800 text-zinc-300 disabled:opacity-30"
+              className="p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-zinc-800 text-zinc-300 disabled:opacity-30 touch-manipulation flex items-center justify-center"
+              aria-label="Ronda anterior"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button 
+              type="button"
               onClick={() => {
                 if (currentRoundIndex < game.settings.totalRounds - 1 && game.rounds[currentRoundIndex].isCompleted) {
                   editRound(currentRoundIndex + 1);
@@ -87,7 +115,8 @@ export function RoundEntryScreen() {
                 }
               }}
               disabled={currentRoundIndex === game.settings.totalRounds - 1 || !currentRound.isCompleted}
-              className="p-2 rounded-lg bg-zinc-800 text-zinc-300 disabled:opacity-30"
+              className="p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-zinc-800 text-zinc-300 disabled:opacity-30 touch-manipulation flex items-center justify-center"
+              aria-label="Ronda siguiente"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -178,7 +207,7 @@ export function RoundEntryScreen() {
               const isStarting = index === 0;
 
               return (
-                <div key={player.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+                <div key={player.id} data-testid="player-card" className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                   {isStarting && (
                     <div className="absolute top-0 right-0 bg-amber-600/20 text-amber-500 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                       Líder
@@ -253,27 +282,30 @@ export function RoundEntryScreen() {
 
       {/* Sticky Footer */}
       {!isCompleted && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800 z-20">
-          <div className="max-w-3xl mx-auto flex gap-4">
+        <div className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-zinc-950/90 backdrop-blur-md border-t border-zinc-800 z-20">
+          <div className="max-w-3xl mx-auto flex gap-3 sm:gap-4">
             <button
+              type="button"
               onClick={() => endGame()}
-              className="px-6 py-4 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors font-semibold"
+              className="px-4 sm:px-6 py-4 min-h-[48px] rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors font-semibold touch-manipulation shrink-0"
             >
               Ver Tabla
             </button>
             {activeTab === 'bids' ? (
               <button 
+                type="button"
                 onClick={() => setActiveTab('tricks')}
                 disabled={!allBidsEntered}
-                className="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] disabled:opacity-50 disabled:shadow-none"
+                className="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-lg py-4 min-h-[48px] rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] disabled:opacity-50 disabled:shadow-none touch-manipulation active:scale-[0.99]"
               >
                 Avanzar a Bazas
               </button>
             ) : (
               <button 
+                type="button"
                 onClick={handleCompleteRound}
                 disabled={!allTricksEntered}
-                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg py-4 rounded-xl transition-all shadow-[0_0_15px_rgba(5,150,105,0.3)] disabled:opacity-50 disabled:shadow-none"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg py-4 min-h-[48px] rounded-xl transition-all shadow-[0_0_15px_rgba(5,150,105,0.3)] disabled:opacity-50 disabled:shadow-none touch-manipulation active:scale-[0.99]"
               >
                 {currentRoundIndex === game.settings.totalRounds - 1 ? 'Finalizar Partida' : 'Completar Ronda'}
               </button>
@@ -282,7 +314,57 @@ export function RoundEntryScreen() {
         </div>
       )}
 
-      <TrickJudgeModal isOpen={isJudgeOpen} onClose={() => setIsJudgeOpen(false)} />
+      {deletePartidaOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-zinc-950/90 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-partida-title"
+          aria-describedby="delete-partida-desc"
+          onClick={() => setDeletePartidaOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl sm:rounded-2xl bg-zinc-900 border border-zinc-800 border-b-0 sm:border-b shadow-2xl p-6 sm:p-6 pt-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex gap-3 mb-4">
+              <div className="shrink-0 w-11 h-11 rounded-full bg-red-950 flex items-center justify-center border border-red-800">
+                <AlertTriangle className="w-6 h-6 text-red-400" aria-hidden />
+              </div>
+              <div>
+                <h2 id="delete-partida-title" className="text-lg font-bold text-white leading-tight">
+                  ¿Eliminar toda la partida?
+                </h2>
+                <p id="delete-partida-desc" className="mt-2 text-sm text-zinc-400 leading-relaxed">
+                  Se borrará <strong className="text-zinc-200">por completo</strong> esta partida: todas las rondas,
+                  puntuaciones y datos guardados en este dispositivo.{' '}
+                  <span className="text-red-300/95">No podrás recuperarla.</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setDeletePartidaOpen(false)}
+                className="w-full sm:flex-1 py-3.5 min-h-[48px] rounded-xl border border-zinc-700 text-zinc-200 font-semibold touch-manipulation active:scale-[0.99]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                data-testid="btn-confirm-delete-partida"
+                onClick={() => {
+                  resetGame();
+                  setDeletePartidaOpen(false);
+                }}
+                className="w-full sm:flex-1 py-3.5 min-h-[48px] rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold touch-manipulation active:scale-[0.99] shadow-[0_0_20px_rgba(220,38,38,0.25)]"
+              >
+                Sí, eliminar partida
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

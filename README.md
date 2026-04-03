@@ -45,11 +45,20 @@ El **Motor de Reglas** (Rules Engine) está programado siguiendo el estándar de
    ```bash
    npm run dev
    ```
-3. **Ejecutar Tests:**
+3. **Tests unitarios (dominio):**
    ```bash
    npm run test
    ```
-4. **Construir para Producción:**
+4. **Tests E2E (Playwright, flujo completo + persistencia `localStorage`):**
+   ```bash
+   npm run test:e2e
+   ```
+   Arranca un `vite preview` en el puerto **4287** (dedicado; no reutiliza otros servidores). Incluye recarga de página, copia de `storageState` (simula reabrir la app) y comprobación de la clave `skull-king-storage`.
+5. **Todos los tests:**
+   ```bash
+   npm run test:all
+   ```
+6. **Construir para Producción:**
    ```bash
    npm run build
    ```
@@ -61,4 +70,3 @@ Si deseas implementar *House Rules* o nuevas expansiones:
 1. **Nuevas Cartas:** Añade el tipo de carta en `src/domain/types.ts` (`SpecialCard`).
 2. **Jerarquía:** Actualiza la lógica de resolución en `src/domain/trickResolver.ts` dentro de la función `resolveTrick`.
 3. **Puntuación:** Modifica `src/domain/scoring.ts` si las puntuaciones base o los requisitos de bonificación varían (ej. dar bonus aunque el bid falle, habilitando un flag en `GameSettings`).
-4. **Interfaz del Juez:** Agrega el botón correspondiente en el array `CARD_TYPES` dentro de `src/pages/TrickJudgeModal.tsx`.

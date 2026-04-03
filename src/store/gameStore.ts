@@ -6,8 +6,7 @@ import { calculateRoundScore } from '../domain/scoring';
 
 interface GameState {
   game: Game | null;
-  
-  // Actions
+
   createNewGame: (players: Player[], settings: GameSettings) => void;
   updateBid: (roundIndex: number, playerId: string, bid: number) => void;
   updateTricksWon: (roundIndex: number, playerId: string, tricksWon: number) => void;
@@ -23,30 +22,29 @@ interface GameState {
 
 export const useGameStore = create<GameState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       game: null,
 
       createNewGame: (players, settings) => {
         const initialRounds: Round[] = [];
         for (let i = 1; i <= settings.totalRounds; i++) {
           const playerResults: Record<string, RoundPlayerResult> = {};
-          players.forEach(p => {
+          players.forEach((p) => {
             playerResults[p.id] = {
               playerId: p.id,
               bid: null,
               tricksWon: null,
               bonusPoints: 0,
-              score: 0
+              score: 0,
             };
           });
 
           initialRounds.push({
             roundNumber: i,
-            // Simple rotation of starting player based on round number
             startingPlayerId: players[(i - 1) % players.length].id,
             playerResults,
             trickEvents: [],
-            isCompleted: false
+            isCompleted: false,
           });
         }
 
@@ -58,60 +56,92 @@ export const useGameStore = create<GameState>()(
             players,
             rounds: initialRounds,
             currentRound: 1,
-            createdAt: new Date().toISOString()
-          }
+            createdAt: new Date().toISOString(),
+          },
         });
       },
 
       updateBid: (roundIndex, playerId, bid) => {
         set((state) => {
           if (!state.game) return state;
-          const newRounds = [...state.game.rounds];
-          newRounds[roundIndex].playerResults[playerId].bid = bid;
-          return { game: { ...state.game, rounds: newRounds } };
+          const rounds = state.game.rounds.map((r, i) => {
+            if (i !== roundIndex) return r;
+            const prev = r.playerResults[playerId];
+            return {
+              ...r,
+              playerResults: {
+                ...r.playerResults,
+                [playerId]: { ...prev, bid },
+              },
+            };
+          });
+          return { game: { ...state.game, rounds } };
         });
       },
 
       updateTricksWon: (roundIndex, playerId, tricksWon) => {
         set((state) => {
           if (!state.game) return state;
-          const newRounds = [...state.game.rounds];
-          newRounds[roundIndex].playerResults[playerId].tricksWon = tricksWon;
-          return { game: { ...state.game, rounds: newRounds } };
+          const rounds = state.game.rounds.map((r, i) => {
+            if (i !== roundIndex) return r;
+            const prev = r.playerResults[playerId];
+            return {
+              ...r,
+              playerResults: {
+                ...r.playerResults,
+                [playerId]: { ...prev, tricksWon },
+              },
+            };
+          });
+          return { game: { ...state.game, rounds } };
         });
       },
 
       updateBonus: (roundIndex, playerId, bonusPoints) => {
         set((state) => {
           if (!state.game) return state;
-          const newRounds = [...state.game.rounds];
-          newRounds[roundIndex].playerResults[playerId].bonusPoints = bonusPoints;
-          return { game: { ...state.game, rounds: newRounds } };
+          const rounds = state.game.rounds.map((r, i) => {
+            if (i !== roundIndex) return r;
+            const prev = r.playerResults[playerId];
+            return {
+              ...r,
+              playerResults: {
+                ...r.playerResults,
+                [playerId]: { ...prev, bonusPoints },
+              },
+            };
+          });
+          return { game: { ...state.game, rounds } };
         });
       },
 
       completeRound: (roundIndex) => {
         set((state) => {
           if (!state.game) return state;
-          const newRounds = [...state.game.rounds];
-          const round = newRounds[roundIndex];
           const settings = state.game.settings;
-
-          // Calculate scores
-          Object.values(round.playerResults).forEach(result => {
-            if (result.bid !== null && result.tricksWon !== null) {
-              result.score = calculateRoundScore(
-                round.roundNumber,
-                result.bid,
-                result.tricksWon,
-                result.bonusPoints,
-                settings
-              );
+          const rounds = state.game.rounds.map((r, i) => {
+            if (i !== roundIndex) return r;
+            const playerResults: Record<string, RoundPlayerResult> = {};
+            for (const pid of Object.keys(r.playerResults)) {
+              const result = r.playerResults[pid];
+              if (result.bid !== null && result.tricksWon !== null) {
+                playerResults[pid] = {
+                  ...result,
+                  score: calculateRoundScore(
+                    r.roundNumber,
+                    result.bid,
+                    result.tricksWon,
+                    result.bonusPoints,
+                    settings
+                  ),
+                };
+              } else {
+                playerResults[pid] = { ...result };
+              }
             }
+            return { ...r, playerResults, isCompleted: true };
           });
-
-          round.isCompleted = true;
-          return { game: { ...state.game, rounds: newRounds } };
+          return { game: { ...state.game, rounds } };
         });
       },
 
@@ -120,26 +150,24 @@ export const useGameStore = create<GameState>()(
           if (!state.game) return state;
           if (state.game.currentRound < state.game.settings.totalRounds) {
             return { game: { ...state.game, currentRound: state.game.currentRound + 1 } };
-          } else {
-            return { game: { ...state.game, status: 'finished' } };
           }
+          return { game: { ...state.game, status: 'finished' } };
         });
       },
 
       editRound: (roundIndex) => {
         set((state) => {
           if (!state.game) return state;
-          const newRounds = [...state.game.rounds];
-          newRounds[roundIndex].isCompleted = false;
-          // Note: we don't automatically reset the scores to 0 here, they will be recalculated on completeRound.
-          // Also, we change the current round to this one.
-          return { 
-            game: { 
-              ...state.game, 
-              rounds: newRounds,
+          const rounds = state.game.rounds.map((r, i) =>
+            i === roundIndex ? { ...r, isCompleted: false } : r
+          );
+          return {
+            game: {
+              ...state.game,
+              rounds,
               currentRound: roundIndex + 1,
-              status: 'playing' 
-            } 
+              status: 'playing',
+            },
           };
         });
       },
@@ -164,7 +192,7 @@ export const useGameStore = create<GameState>()(
 
       importGame: (game) => {
         set({ game });
-      }
+      },
     }),
     {
       name: 'skull-king-storage',

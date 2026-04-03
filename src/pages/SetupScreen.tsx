@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { Player, GameSettings, RulePreset } from '../domain/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -6,10 +6,11 @@ import { Skull, Plus, Trash2, Settings, Users, ArrowRight } from 'lucide-react';
 import clsx from 'clsx';
 
 export function SetupScreen() {
-  const createNewGame = useGameStore(state => state.createNewGame);
-  const [players, setPlayers] = useState<Player[]>([
-    { id: uuidv4(), name: '' },
-    { id: uuidv4(), name: '' }
+  const createNewGame = useGameStore((state) => state.createNewGame);
+  const playerIdPrefix = useId().replace(/:/g, '');
+  const [players, setPlayers] = useState<Player[]>(() => [
+    { id: `${playerIdPrefix}-0`, name: '' },
+    { id: `${playerIdPrefix}-1`, name: '' },
   ]);
   
   const [settings, setSettings] = useState<GameSettings>({
@@ -47,7 +48,7 @@ export function SetupScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col p-4 md:p-8 font-sans">
+    <div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] md:p-8 font-sans">
       <div className="max-w-2xl w-full mx-auto flex-1 flex flex-col gap-8">
         
         <header className="text-center mt-8 mb-4 relative">
@@ -64,6 +65,7 @@ export function SetupScreen() {
               className="hidden" 
               onChange={(e) => {
                 const file = e.target.files?.[0];
+                e.target.value = '';
                 if (file) {
                   const reader = new FileReader();
                   reader.onload = (ev) => {
@@ -74,7 +76,7 @@ export function SetupScreen() {
                       } else {
                         alert("Archivo JSON inválido.");
                       }
-                    } catch (e) {
+                    } catch {
                       alert("Error al leer el archivo JSON.");
                     }
                   };
@@ -225,6 +227,8 @@ export function SetupScreen() {
         </div>
 
         <button 
+          type="button"
+          data-testid="btn-zarpar"
           onClick={handleStart}
           className="mt-4 mb-12 w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-lg py-4 px-6 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)]"
         >

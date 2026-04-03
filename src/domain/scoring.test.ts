@@ -61,7 +61,7 @@ describe('validateRound', () => {
     };
     const { isValid, errors } = validateRound(3, results, defaultSettings);
     expect(isValid).toBe(false);
-    expect(errors[0]).toContain('cannot exceed');
+    expect(errors[0]).toMatch(/solo hay \d+ baza/);
   });
 
   it('allows less tricks if Kraken is used', () => {

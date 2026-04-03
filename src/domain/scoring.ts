@@ -68,30 +68,34 @@ export function validateRound(
   
   Object.values(playerResults).forEach((result) => {
     if (result.bid === null || result.bid < 0) {
-      errors.push("Bids must be positive numbers.");
+      errors.push('Falta la apuesta de algún jugador (o es inválida).');
     }
     if (result.tricksWon === null || result.tricksWon < 0) {
-      errors.push("Tricks won must be positive numbers.");
+      errors.push('Falta cuántas bazas ganó cada jugador (o el valor es inválido).');
     } else {
       totalTricksWon += result.tricksWon;
     }
   });
 
   if (totalTricksWon > roundNumber) {
-    errors.push(`Total tricks won (${totalTricksWon}) cannot exceed round number (${roundNumber}).`);
+    errors.push(
+      `En la ronda ${roundNumber} solo hay ${roundNumber} baza${roundNumber === 1 ? '' : 's'} en total: sumaste ${totalTricksWon}. Revisá las bazas ganadas.`
+    );
   }
 
   // If we don't use Kraken, total tricks must exactly equal round number
   if (!settings.useKraken && totalTricksWon !== roundNumber) {
-    // If not all players have entered tricks yet, it's just incomplete, but if they all have and it's wrong:
     const allEntered = Object.values(playerResults).every(r => r.tricksWon !== null);
     if (allEntered) {
-      errors.push(`Total tricks won (${totalTricksWon}) must equal round number (${roundNumber}).`);
+      errors.push(
+        `Con Kraken desactivado, la suma de bazas ganadas debe ser exactamente ${roundNumber} (ahora suma ${totalTricksWon}).`
+      );
     }
   }
 
+  const unique = [...new Set(errors)];
   return {
-    isValid: errors.length === 0,
-    errors
+    isValid: unique.length === 0,
+    errors: unique
   };
 }

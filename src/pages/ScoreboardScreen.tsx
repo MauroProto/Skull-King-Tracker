@@ -50,8 +50,8 @@ export function ScoreboardScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-12">
-      <header className="bg-zinc-900 border-b border-zinc-800 p-4 sticky top-0 z-10 shadow-lg">
+    <div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-[max(3rem,env(safe-area-inset-bottom))]">
+      <header className="bg-zinc-900 border-b border-zinc-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] sticky top-0 z-10 shadow-lg">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             {!isGameFullyCompleted ? (
