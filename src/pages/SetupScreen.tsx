@@ -96,8 +96,11 @@ export function SetupScreen() {
           
           <div className="space-y-3 mb-6">
             {players.map((player, index) => (
-              <div key={player.id} className="flex gap-2 items-center">
-                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 text-sm font-bold">
+              <div key={player.id} className="flex gap-3 items-center">
+                <div
+                  className="flex h-14 min-w-[2.75rem] shrink-0 rounded-xl border border-zinc-700/60 bg-zinc-800/90 items-center justify-center text-base font-semibold text-zinc-300 tabular-nums"
+                  aria-hidden
+                >
                   {index + 1}
                 </div>
                 <input 
@@ -105,16 +108,17 @@ export function SetupScreen() {
                   value={player.name}
                   onChange={(e) => updatePlayerName(player.id, e.target.value)}
                   placeholder={`Jugador ${index + 1}`}
-                  className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-4 text-white text-lg focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors touch-manipulation"
+                  className="min-h-14 flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3.5 text-white text-lg leading-tight focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors touch-manipulation"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck="false"
                 />
                 <button 
+                  type="button"
                   onClick={() => removePlayer(player.id)}
                   disabled={players.length <= 2}
-                  className="p-3 text-zinc-500 hover:text-red-400 disabled:opacity-30 disabled:hover:text-zinc-500 transition-colors"
+                  className="flex h-14 min-w-11 shrink-0 items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-800 hover:text-red-400 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-zinc-500 transition-colors touch-manipulation"
                   aria-label="Eliminar jugador"
                 >
                   <Trash2 className="w-5 h-5" />
