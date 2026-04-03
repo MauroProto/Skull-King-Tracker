@@ -68,10 +68,10 @@ export function RoundEntryScreen() {
   ];
 
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950 text-zinc-100 font-sans">
       
       {/* Header */}
-      <header className="bg-zinc-900 border-b border-zinc-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] sticky top-0 z-10 shadow-lg">
+      <header className="shrink-0 bg-zinc-900 border-b border-zinc-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] z-10 shadow-lg">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Skull className="text-amber-500 w-8 h-8" />
@@ -150,11 +150,12 @@ export function RoundEntryScreen() {
         )}
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 p-4">
+      {/* Main: único scroll (evita scroll “duel” con body en iOS / Chrome móvil) */}
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch]">
         <div className="max-w-3xl mx-auto space-y-4">
           
-          {!validation.isValid && activeTab === 'tricks' && (
+          {/* Solo cuando ya cargó todas las bazas: si falta algo, no mostrar (sigue completando) */}
+          {!validation.isValid && activeTab === 'tricks' && allTricksEntered && (
             <div className="bg-red-950/40 border border-red-900/50 rounded-xl p-4 flex items-start gap-3">
               <AlertTriangle className="text-red-500 w-5 h-5 shrink-0 mt-0.5" />
               <div className="text-sm text-red-200">
