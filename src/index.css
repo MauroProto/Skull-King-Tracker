@@ -15,16 +15,25 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
+  overflow-x: hidden;
+  max-width: 100%;
+  /* Evita franja blanca al hacer pan horizontal en móvil si algo desborda */
+  background-color: #09090b;
   /* No bloquear el “rubber band” global: el scroll vive en <main> con overscroll-contain */
   overscroll-behavior-y: auto;
 }
 
 #root {
   min-height: 100dvh;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
   isolation: isolate;
 }

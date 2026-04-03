@@ -1,8 +1,10 @@
 import { useGameStore } from '../store/gameStore';
-import { Skull, Download, RotateCcw, Play, Trophy, ArrowLeft } from 'lucide-react';
+import { useLocale } from '../i18n/LocaleContext';
+import { Download, RotateCcw, Play, Trophy, ArrowLeft } from 'lucide-react';
 import clsx from 'clsx';
 
 export function ScoreboardScreen() {
+  const { t, locale, setLocale } = useLocale();
   const game = useGameStore(state => state.game);
   const resetGame = useGameStore(state => state.resetGame);
   const editRound = useGameStore(state => state.editRound);
@@ -50,43 +52,54 @@ export function ScoreboardScreen() {
   };
 
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-[max(3rem,env(safe-area-inset-bottom))]">
+    <div className="min-h-dvh w-full min-w-0 overflow-x-hidden bg-zinc-950 text-zinc-100 flex flex-col font-sans pb-[max(3rem,env(safe-area-inset-bottom))]">
       <header className="bg-zinc-900 border-b border-zinc-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] sticky top-0 z-10 shadow-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-4xl mx-auto flex min-w-0 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
             {!isGameFullyCompleted ? (
               <button 
+                type="button"
                 onClick={() => resumeGame()}
                 className="p-2 -ml-2 rounded-lg bg-zinc-950 text-zinc-400 hover:text-white transition-colors"
-                title="Volver a la Partida"
+                title={t('score.back')}
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
             ) : (
               <Trophy className="text-amber-500 w-8 h-8" />
             )}
-            <div>
-              <h1 className="text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Puntuaciones</h1>
-              <p className="text-xs text-zinc-400">Skull King Tracker</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>{t('score.title')}</h1>
+              <p className="truncate text-xs text-zinc-400">{t('score.subtitle')}</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLocale(locale === 'es' ? 'en' : 'es')}
+              className="px-2 min-h-[40px] min-w-[40px] rounded-lg border border-zinc-700 text-xs font-semibold text-zinc-400 hover:border-amber-500/50 hover:text-amber-400"
+              aria-label={locale === 'es' ? t('lang.switchAriaToEn') : t('lang.switchAriaToEs')}
+            >
+              {t('lang.switch')}
+            </button>
             <button 
+              type="button"
               onClick={handleExport}
               className="p-2 rounded-lg bg-zinc-800 text-zinc-300 hover:text-white transition-colors"
-              title="Exportar Partida"
+              title={t('score.export')}
             >
               <Download className="w-5 h-5" />
             </button>
             <button 
+              type="button"
               onClick={() => {
-                if (confirm('¿Estás seguro de que deseas salir y crear una nueva partida?')) {
+                if (confirm(t('score.confirmNew'))) {
                   resetGame();
                 }
               }}
               className="p-2 rounded-lg bg-zinc-800 text-red-400 hover:text-red-300 transition-colors"
-              title="Nueva Partida"
+              title={t('score.newGame')}
             >
               <RotateCcw className="w-5 h-5" />
             </button>
@@ -98,7 +111,7 @@ export function ScoreboardScreen() {
         
         {/* Podio / Resumen */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
-          <h2 className="text-lg font-bold mb-4 text-center text-zinc-400 uppercase tracking-widest">Clasificación Actual</h2>
+          <h2 className="text-lg font-bold mb-4 text-center text-zinc-400 uppercase tracking-widest">{t('score.standings')}</h2>
           <div className="flex flex-col gap-3">
             {sortedPlayers.map((player, index) => (
               <div key={player.id} className="flex items-center justify-between bg-zinc-950 p-4 rounded-xl border border-zinc-800">
@@ -125,7 +138,7 @@ export function ScoreboardScreen() {
             <table className="w-full text-sm text-left">
               <thead className="bg-zinc-950 text-zinc-400 uppercase font-bold text-xs tracking-wider">
                 <tr>
-                  <th className="px-4 py-4 whitespace-nowrap">Ronda</th>
+                  <th className="px-4 py-4 whitespace-nowrap">{t('score.tableRound')}</th>
                   {game.players.map(p => (
                     <th key={p.id} className="px-4 py-4 whitespace-nowrap text-center">{p.name}</th>
                   ))}
@@ -139,7 +152,7 @@ export function ScoreboardScreen() {
                     !rd.isCompleted && "opacity-50"
                   )}>
                     <td className="px-4 py-3 font-medium whitespace-nowrap">
-                      Ronda {rd.roundNumber}
+                      {t('score.tableRoundRow', { n: rd.roundNumber })}
                     </td>
                     {game.players.map(p => {
                       const scoreData = rd.scores[p.id];
@@ -163,6 +176,7 @@ export function ScoreboardScreen() {
                     })}
                     <td className="px-4 py-3 text-right">
                       <button 
+                        type="button"
                         onClick={() => editRound(idx)}
                         className="p-2 text-zinc-500 hover:text-amber-500 transition-colors"
                       >

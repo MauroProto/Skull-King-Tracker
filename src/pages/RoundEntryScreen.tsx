@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/gameStore';
 import { validateRound } from '../domain/scoring';
+import { useLocale } from '../i18n/LocaleContext';
+import { formatValidationIssues } from '../i18n/formatValidation';
 import { ChevronLeft, ChevronRight, Check, AlertTriangle, TrendingUp, Anchor, Skull, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 
 export function RoundEntryScreen() {
+  const { t, locale, setLocale } = useLocale();
   const {
     game,
     updateBid,
@@ -40,13 +43,17 @@ export function RoundEntryScreen() {
   
   // Validation
   const validation = validateRound(currentRound.roundNumber, currentRound.playerResults, game.settings);
+  const validationMessages = useMemo(
+    () => formatValidationIssues(validation.issues, t),
+    [validation.issues, t]
+  );
   
   const allBidsEntered = Object.values(currentRound.playerResults).every(r => r.bid !== null);
   const allTricksEntered = Object.values(currentRound.playerResults).every(r => r.tricksWon !== null);
 
   const handleCompleteRound = () => {
     if (!validation.isValid) {
-      alert("Corrige los errores antes de continuar:\n" + validation.errors.join("\n"));
+      alert(t('round.fixErrors') + validationMessages.join('\n'));
       return;
     }
     completeRound(currentRoundIndex);
@@ -68,27 +75,35 @@ export function RoundEntryScreen() {
   ];
 
   return (
-    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-zinc-950 text-zinc-100 font-sans">
+    <div className="flex h-dvh max-h-dvh min-w-0 max-w-[100%] flex-col overflow-hidden bg-zinc-950 text-zinc-100 font-sans">
       
       {/* Header */}
       <header className="shrink-0 bg-zinc-900 border-b border-zinc-800 p-4 pt-[max(1rem,env(safe-area-inset-top))] z-10 shadow-lg">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Skull className="text-amber-500 w-8 h-8" />
-            <div>
-              <h1 className="text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Ronda {currentRound.roundNumber}</h1>
-              <p className="text-xs text-zinc-400">Total: {game.settings.totalRounds}</p>
+        <div className="max-w-3xl mx-auto flex min-w-0 items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <Skull className="shrink-0 text-amber-500 w-8 h-8" />
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>{t('round.title', { n: currentRound.roundNumber })}</h1>
+              <p className="truncate text-xs text-zinc-400">{t('round.total', { n: game.settings.totalRounds })}</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+            <button
+              type="button"
+              onClick={() => setLocale(locale === 'es' ? 'en' : 'es')}
+              className="px-2 min-h-[44px] min-w-[44px] rounded-lg border border-zinc-700 text-xs font-semibold text-zinc-400 hover:border-amber-500/50 hover:text-amber-400 flex items-center justify-center touch-manipulation"
+              aria-label={locale === 'es' ? t('lang.switchAriaToEn') : t('lang.switchAriaToEs')}
+            >
+              {t('lang.switch')}
+            </button>
             <button
               type="button"
               data-testid="btn-delete-partida"
               onClick={() => setDeletePartidaOpen(true)}
               className="p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-red-950/80 border border-red-900/60 text-red-400 hover:bg-red-900/50 hover:text-red-300 flex items-center justify-center touch-manipulation"
-              title="Eliminar partida"
-              aria-label="Eliminar toda la partida"
+              title={t('round.deleteTitle')}
+              aria-label={t('round.deleteAria')}
             >
               <Trash2 className="w-5 h-5" strokeWidth={2.25} />
             </button>
@@ -102,7 +117,7 @@ export function RoundEntryScreen() {
               }}
               disabled={currentRoundIndex === 0}
               className="p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-zinc-800 text-zinc-300 disabled:opacity-30 touch-manipulation flex items-center justify-center"
-              aria-label="Ronda anterior"
+              aria-label={t('round.prevRound')}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -116,7 +131,7 @@ export function RoundEntryScreen() {
               }}
               disabled={currentRoundIndex === game.settings.totalRounds - 1 || !currentRound.isCompleted}
               className="p-2.5 min-h-[44px] min-w-[44px] rounded-lg bg-zinc-800 text-zinc-300 disabled:opacity-30 touch-manipulation flex items-center justify-center"
-              aria-label="Ronda siguiente"
+              aria-label={t('round.nextRound')}
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -127,15 +142,17 @@ export function RoundEntryScreen() {
         {!isCompleted && (
           <div className="max-w-3xl mx-auto flex mt-6 bg-zinc-950 rounded-xl p-1 border border-zinc-800">
             <button 
+              type="button"
               onClick={() => setActiveTab('bids')}
               className={clsx(
                 "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
                 activeTab === 'bids' ? "bg-amber-600 text-zinc-950 shadow-sm" : "text-zinc-400 hover:text-white"
               )}
             >
-              Apuestas (Bids)
+              {t('round.tabBids')}
             </button>
             <button 
+              type="button"
               onClick={() => setActiveTab('tricks')}
               disabled={!allBidsEntered}
               className={clsx(
@@ -144,7 +161,7 @@ export function RoundEntryScreen() {
                 !allBidsEntered && "opacity-50 cursor-not-allowed"
               )}
             >
-              Bazas (Tricks)
+              {t('round.tabTricks')}
             </button>
           </div>
         )}
@@ -160,7 +177,7 @@ export function RoundEntryScreen() {
               <AlertTriangle className="text-red-500 w-5 h-5 shrink-0 mt-0.5" />
               <div className="text-sm text-red-200">
                 <ul className="list-disc pl-4 space-y-1">
-                  {validation.errors.map((err, i) => (
+                  {validationMessages.map((err, i) => (
                     <li key={i}>{err}</li>
                   ))}
                 </ul>
@@ -171,8 +188,8 @@ export function RoundEntryScreen() {
           {isCompleted ? (
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
               <Check className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold mb-2">Ronda Completada</h2>
-              <p className="text-zinc-400 mb-6">Puntuaciones calculadas.</p>
+              <h2 className="text-2xl font-bold mb-2">{t('round.roundDone')}</h2>
+              <p className="text-zinc-400 mb-6">{t('round.scoresCalculated')}</p>
               
               <div className="space-y-3 text-left">
                 {orderedPlayers.map(p => {
@@ -181,8 +198,8 @@ export function RoundEntryScreen() {
                     <div key={p.id} className="flex justify-between items-center bg-zinc-950 p-4 rounded-xl border border-zinc-800">
                       <span className="font-medium text-lg">{p.name}</span>
                       <div className="flex items-center gap-6 text-sm text-zinc-400">
-                        <span>Bid: {result.bid}</span>
-                        <span>Tricks: {result.tricksWon}</span>
+                        <span>{t('round.bid')}: {result.bid}</span>
+                        <span>{t('round.tricks')}: {result.tricksWon}</span>
                         <span className={clsx(
                           "font-bold text-lg",
                           result.score > 0 ? "text-emerald-400" : result.score < 0 ? "text-red-400" : "text-zinc-300"
@@ -199,7 +216,7 @@ export function RoundEntryScreen() {
                 onClick={() => editRound(currentRoundIndex)}
                 className="mt-6 w-full py-3 border border-zinc-700 rounded-lg text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
               >
-                Editar Ronda
+                {t('round.editRound')}
               </button>
             </div>
           ) : (
@@ -211,7 +228,7 @@ export function RoundEntryScreen() {
                 <div key={player.id} data-testid="player-card" className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                   {isStarting && (
                     <div className="absolute top-0 right-0 bg-amber-600/20 text-amber-500 text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
-                      Líder
+                      {t('round.leader')}
                     </div>
                   )}
                   
@@ -238,7 +255,7 @@ export function RoundEntryScreen() {
                   ) : (
                     <div className="space-y-5">
                       <div className="flex items-center justify-between">
-                        <span className="text-zinc-400 flex items-center gap-2 text-lg"><Anchor className="w-5 h-5"/> Bazas ganadas</span>
+                        <span className="text-zinc-400 flex items-center gap-2 text-lg"><Anchor className="w-5 h-5"/> {t('round.tricksWon')}</span>
                         <div className="flex items-center gap-4 bg-zinc-950 p-2 rounded-xl border border-zinc-800 touch-manipulation">
                           <button 
                             onClick={() => updateTricksWon(currentRoundIndex, player.id, Math.max(0, (result.tricksWon || 0) - 1))}
@@ -255,7 +272,7 @@ export function RoundEntryScreen() {
                       </div>
 
                       <div className="flex items-center justify-between pt-5 border-t border-zinc-800">
-                        <span className="text-zinc-400 flex items-center gap-2 text-lg"><TrendingUp className="w-5 h-5"/> Bonus pts.</span>
+                        <span className="text-zinc-400 flex items-center gap-2 text-lg"><TrendingUp className="w-5 h-5"/> {t('round.bonus')}</span>
                         <div className="flex items-center gap-4 bg-zinc-950 p-2 rounded-xl border border-zinc-800 touch-manipulation">
                           <button 
                             onClick={() => updateBonus(currentRoundIndex, player.id, Math.max(0, result.bonusPoints - 10))}
@@ -290,7 +307,7 @@ export function RoundEntryScreen() {
               onClick={() => endGame()}
               className="px-4 sm:px-6 py-4 min-h-[48px] rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors font-semibold touch-manipulation shrink-0"
             >
-              Ver Tabla
+              {t('round.viewTable')}
             </button>
             {activeTab === 'bids' ? (
               <button 
@@ -299,7 +316,7 @@ export function RoundEntryScreen() {
                 disabled={!allBidsEntered}
                 className="flex-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-lg py-4 min-h-[48px] rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.2)] disabled:opacity-50 disabled:shadow-none touch-manipulation active:scale-[0.99]"
               >
-                Avanzar a Bazas
+                {t('round.goTricks')}
               </button>
             ) : (
               <button 
@@ -308,7 +325,7 @@ export function RoundEntryScreen() {
                 disabled={!allTricksEntered}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-lg py-4 min-h-[48px] rounded-xl transition-all shadow-[0_0_15px_rgba(5,150,105,0.3)] disabled:opacity-50 disabled:shadow-none touch-manipulation active:scale-[0.99]"
               >
-                {currentRoundIndex === game.settings.totalRounds - 1 ? 'Finalizar Partida' : 'Completar Ronda'}
+                {currentRoundIndex === game.settings.totalRounds - 1 ? t('round.finishGame') : t('round.completeRound')}
               </button>
             )}
           </div>
@@ -334,12 +351,11 @@ export function RoundEntryScreen() {
               </div>
               <div>
                 <h2 id="delete-partida-title" className="text-lg font-bold text-white leading-tight">
-                  ¿Eliminar toda la partida?
+                  {t('round.deleteTitleModal')}
                 </h2>
                 <p id="delete-partida-desc" className="mt-2 text-sm text-zinc-400 leading-relaxed">
-                  Se borrará <strong className="text-zinc-200">por completo</strong> esta partida: todas las rondas,
-                  puntuaciones y datos guardados en este dispositivo.{' '}
-                  <span className="text-red-300/95">No podrás recuperarla.</span>
+                  {t('round.deleteBody')}{' '}
+                  <span className="text-red-300/95">{t('round.deleteWarn')}</span>
                 </p>
               </div>
             </div>
@@ -349,7 +365,7 @@ export function RoundEntryScreen() {
                 onClick={() => setDeletePartidaOpen(false)}
                 className="w-full sm:flex-1 py-3.5 min-h-[48px] rounded-xl border border-zinc-700 text-zinc-200 font-semibold touch-manipulation active:scale-[0.99]"
               >
-                Cancelar
+                {t('round.cancel')}
               </button>
               <button
                 type="button"
@@ -360,7 +376,7 @@ export function RoundEntryScreen() {
                 }}
                 className="w-full sm:flex-1 py-3.5 min-h-[48px] rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold touch-manipulation active:scale-[0.99] shadow-[0_0_20px_rgba(220,38,38,0.25)]"
               >
-                Sí, eliminar partida
+                {t('round.deleteConfirm')}
               </button>
             </div>
           </div>

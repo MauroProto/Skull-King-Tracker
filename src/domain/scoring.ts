@@ -53,6 +53,12 @@ export function calculateRoundScore(
   return baseScore + appliedBonus;
 }
 
+export type RoundValidationIssue =
+  | { code: 'missing_bid' }
+  | { code: 'missing_tricks' }
+  | { code: 'total_exceeds'; round: number; total: number }
+  | { code: 'total_must_equal'; round: number; total: number };
+
 /**
  * Validates a round's data to ensure it's mathematically possible.
  * Tricks won must sum to the round number, unless Kraken was played.
@@ -62,40 +68,36 @@ export function validateRound(
   roundNumber: number,
   playerResults: Record<string, RoundPlayerResult>,
   settings: GameSettings
-): { isValid: boolean; errors: string[] } {
-  const errors: string[] = [];
+): { isValid: boolean; issues: RoundValidationIssue[] } {
+  let missingBid = false;
+  let missingTricks = false;
   let totalTricksWon = 0;
-  
+
   Object.values(playerResults).forEach((result) => {
     if (result.bid === null || result.bid < 0) {
-      errors.push('Falta la apuesta de algún jugador (o es inválida).');
+      missingBid = true;
     }
     if (result.tricksWon === null || result.tricksWon < 0) {
-      errors.push('Falta cuántas bazas ganó cada jugador (o el valor es inválido).');
+      missingTricks = true;
     } else {
       totalTricksWon += result.tricksWon;
     }
   });
 
+  const issues: RoundValidationIssue[] = [];
+  if (missingBid) issues.push({ code: 'missing_bid' });
+  if (missingTricks) issues.push({ code: 'missing_tricks' });
   if (totalTricksWon > roundNumber) {
-    errors.push(
-      `En la ronda ${roundNumber} solo hay ${roundNumber} baza${roundNumber === 1 ? '' : 's'} en total: sumaste ${totalTricksWon}. Revisá las bazas ganadas.`
-    );
+    issues.push({ code: 'total_exceeds', round: roundNumber, total: totalTricksWon });
   }
 
-  // If we don't use Kraken, total tricks must exactly equal round number
-  if (!settings.useKraken && totalTricksWon !== roundNumber) {
-    const allEntered = Object.values(playerResults).every(r => r.tricksWon !== null);
-    if (allEntered) {
-      errors.push(
-        `Con Kraken desactivado, la suma de bazas ganadas debe ser exactamente ${roundNumber} (ahora suma ${totalTricksWon}).`
-      );
-    }
+  const allTricksEntered = Object.values(playerResults).every((r) => r.tricksWon !== null);
+  if (!settings.useKraken && allTricksEntered && totalTricksWon !== roundNumber) {
+    issues.push({ code: 'total_must_equal', round: roundNumber, total: totalTricksWon });
   }
 
-  const unique = [...new Set(errors)];
   return {
-    isValid: unique.length === 0,
-    errors: unique
+    isValid: issues.length === 0,
+    issues,
   };
 }

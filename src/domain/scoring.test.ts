@@ -49,9 +49,9 @@ describe('validateRound', () => {
       p1: { playerId: 'p1', bid: 1, tricksWon: 1, bonusPoints: 0, score: 0 },
       p2: { playerId: 'p2', bid: 2, tricksWon: 2, bonusPoints: 0, score: 0 },
     };
-    const { isValid, errors } = validateRound(3, results, settings);
+    const { isValid, issues } = validateRound(3, results, settings);
     expect(isValid).toBe(true);
-    expect(errors.length).toBe(0);
+    expect(issues.length).toBe(0);
   });
 
   it('invalidates round with too many tricks', () => {
@@ -59,9 +59,9 @@ describe('validateRound', () => {
       p1: { playerId: 'p1', bid: 1, tricksWon: 2, bonusPoints: 0, score: 0 },
       p2: { playerId: 'p2', bid: 2, tricksWon: 2, bonusPoints: 0, score: 0 },
     };
-    const { isValid, errors } = validateRound(3, results, defaultSettings);
+    const { isValid, issues } = validateRound(3, results, defaultSettings);
     expect(isValid).toBe(false);
-    expect(errors[0]).toMatch(/solo hay \d+ baza/);
+    expect(issues[0].code).toBe('total_exceeds');
   });
 
   it('allows less tricks if Kraken is used', () => {
